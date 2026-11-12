@@ -1,1 +1,827 @@
-PLACEHOLDER_V5
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0a">
+<title>Sesselzeit Tracker · Polster</title>
+<style>
+:root {
+  --bg: #0a0a0a;
+  --card: rgba(30,30,30,0.75);
+  --border: rgba(255,255,255,0.08);
+  --accent: #3b82f6;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --text: #f5f5f5;
+  --muted: #a3a3a3;
+  --glass: rgba(255,255,255,0.05);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+  color: var(--text);
+  min-height: 100vh;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  -webkit-tap-highlight-color: transparent;
+}
+.container { max-width: 480px; margin: 0 auto; padding: 16px; }
+header { text-align: center; padding: 16px 0 8px; margin-bottom: 12px; }
+header h1 { font-size: 1.55rem; font-weight: 700; }
+header p { color: var(--muted); font-size: 0.82rem; margin-top: 2px; }
+.card {
+  background: var(--card);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 14px 16px; border: none; border-radius: 12px;
+  font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  width: 100%; margin: 4px 0; touch-action: manipulation;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-success { background: var(--success); color: white; }
+.btn-warning { background: var(--warning); color: #111; }
+.btn-danger { background: var(--danger); color: white; }
+.btn-ghost { background: var(--glass); color: var(--text); border: 1px solid var(--border); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-small { padding: 10px 12px; font-size: 0.9rem; width: auto; }
+.btn-group { display: flex; gap: 8px; }
+.btn-group .btn { flex: 1; margin: 0; }
+.timer-display {
+  font-size: 2.6rem; font-weight: 700; font-variant-numeric: tabular-nums;
+  text-align: center; letter-spacing: -1px; margin: 8px 0; color: var(--accent);
+}
+.stat-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 0.98rem; border-bottom: 1px solid var(--border); }
+.stat-row:last-child { border: none; }
+.stat-label { color: var(--muted); }
+.stat-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+.status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+.status-running { background: rgba(16,185,129,0.2); color: var(--success); }
+.status-paused { background: rgba(245,158,11,0.2); color: var(--warning); }
+.status-idle { background: rgba(163,163,163,0.2); color: var(--muted); }
+.status-fertig { background: rgba(59,130,246,0.25); color: #93c5fd; }
+.auftrag-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px; background: var(--glass); border-radius: 12px; margin-bottom: 8px; cursor: pointer;
+}
+.auftrag-info h3 { font-size: 1.05rem; margin-bottom: 2px; }
+.auftrag-info .meta { font-size: 0.8rem; color: var(--muted); }
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); display: none; align-items: flex-end; justify-content: center; z-index: 1000; padding: 16px; }
+.modal.active { display: flex; }
+.modal-content { background: #1a1a1a; border-radius: 20px 20px 0 0; padding: 20px; width: 100%; max-width: 480px; max-height: 80vh; overflow-y: auto; }
+.modal h2 { margin-bottom: 16px; font-size: 1.3rem; }
+input, select, textarea {
+  width: 100%; padding: 14px; border-radius: 12px; border: 1px solid var(--border);
+  background: rgba(255,255,255,0.05); color: var(--text); font-size: 1rem; margin-bottom: 12px;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
+input:disabled, textarea:disabled { opacity: 0.6; }
+.reason-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.reason-chip { padding: 8px 14px; background: var(--glass); border: 1px solid var(--border); border-radius: 20px; font-size: 0.9rem; cursor: pointer; }
+.reason-chip.selected { background: var(--accent); border-color: var(--accent); }
+.history-item { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+.fab { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom)); right: 20px; width: 60px; height: 60px; border-radius: 50%; background: var(--accent); color: white; font-size: 2rem; border: none; box-shadow: 0 6px 20px rgba(59,130,246,0.4); cursor: pointer; z-index: 100; }
+.empty { text-align: center; color: var(--muted); padding: 40px 20px; }
+.tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+.tab { flex: 1; padding: 10px; text-align: center; background: var(--glass); border-radius: 10px; cursor: pointer; font-size: 0.9rem; }
+.tab.active { background: var(--accent); }
+.hidden { display: none !important; }
+footer { text-align: center; padding: 20px 0; font-size: 0.75rem; color: var(--muted); }
+.report-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
+.report-table th, .report-table td { padding: 8px 4px; text-align: left; border-bottom: 1px solid var(--border); }
+.report-table th { color: var(--muted); font-weight: 500; }
+.kategorie-item { background: rgba(255,255,255,0.03); border-radius: 12px; padding: 12px; margin-bottom: 10px; border: 1px solid var(--border); }
+.kategorie-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.kategorie-name { font-weight: 600; }
+.kategorie-time { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 600; }
+@media print {
+  body { background: white; color: black; }
+  .fab, .tabs, .btn, footer, #back-btn { display: none !important; }
+  .card { box-shadow: none; border: 1px solid #ddd; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🪑 Sesselzeit</h1>
+    <p>Mehrere Sachen pro Auftrag stempeln</p>
+  </header>
+
+  <div id="home-view">
+    <div class="tabs">
+      <div class="tab active" data-tab="auftraege">Aufträge</div>
+      <div class="tab" data-tab="bericht">Bericht</div>
+      <div class="tab" data-tab="export">Export</div>
+    </div>
+
+    <div id="tab-auftraege">
+      <div id="auftrag-list"></div>
+      <div id="empty-state" class="empty hidden">Noch keine Aufträge.<br>Tippe auf + um einen anzulegen.</div>
+    </div>
+
+    <div id="tab-bericht" class="hidden">
+      <div class="card">
+        <h3 style="margin-bottom:8px">Gesamtbericht</h3>
+        <div id="bericht-content"></div>
+        <button class="btn btn-primary" id="print-bericht" style="margin-top:12px">Bericht drucken / als PDF speichern</button>
+      </div>
+    </div>
+
+    <div id="tab-export" class="hidden">
+      <div class="card">
+        <button class="btn btn-ghost" id="export-json">Daten als JSON exportieren</button>
+        <button class="btn btn-ghost" id="export-csv">Zeiten als CSV exportieren</button>
+        <button class="btn btn-ghost" id="import-json">Daten importieren</button>
+        <input type="file" id="import-file" accept=".json" class="hidden">
+        <p style="margin-top:12px;font-size:0.8rem;color:var(--muted)">Alle Daten bleiben lokal gespeichert.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="detail-view" class="hidden">
+    <button class="btn btn-ghost" id="back-btn" style="margin-bottom:12px">← Zurück</button>
+    <div class="card">
+      <h2 id="detail-name"></h2>
+      <div id="detail-status"></div>
+      <div id="live-timer" class="timer-display">00:00:00</div>
+      <div id="session-info" style="text-align:center;color:var(--muted);font-size:0.85rem;margin-bottom:8px"></div>
+      <div id="stats"></div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h3>Kategorien / Sachen</h3>
+        <button class="btn btn-primary btn-small" id="add-kategorie" style="width:auto">+ Neue Sache</button>
+      </div>
+      <div id="kategorien-list"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:8px">Anzahl Sessel</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="menge-input" min="1" step="1" style="flex:1;margin:0" placeholder="Anzahl">
+        <button class="btn btn-primary btn-small" id="save-menge">Speichern</button>
+      </div>
+    </div>
+
+    <div id="fertig-section" class="card" style="margin-top:12px">
+      <button class="btn btn-success" id="btn-fertig">✓ Auftrag fertigstellen</button>
+      <p style="font-size:0.8rem;color:var(--muted);margin-top:8px;text-align:center">Nach dem Fertigstellen können keine Zeiten mehr geändert werden.</p>
+    </div>
+    <button class="btn btn-danger" id="delete-auftrag" style="margin-top:8px">Auftrag löschen</button>
+  </div>
+</div>
+
+<button class="fab" id="add-fab">+</button>
+
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <h2 id="modal-title">Neuer Auftrag</h2>
+    <input type="text" id="modal-name" placeholder="Auftragsname / Kunde" autocomplete="off">
+    <input type="number" id="modal-menge" placeholder="Anzahl Sessel" min="1" step="1" value="1">
+    <textarea id="modal-notes" placeholder="Notizen (optional)" rows="2"></textarea>
+    <div class="btn-group">
+      <button class="btn btn-ghost" id="modal-cancel">Abbrechen</button>
+      <button class="btn btn-primary" id="modal-save">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="kategorie-modal">
+  <div class="modal-content">
+    <h2>Neue Sache / Kategorie</h2>
+    <input type="text" id="kategorie-name" placeholder="z.B. Beziehen, Polsterung, Nähen, Holz..." autocomplete="off">
+    <div class="btn-group">
+      <button class="btn btn-ghost" id="kategorie-cancel">Abbrechen</button>
+      <button class="btn btn-primary" id="kategorie-save">Hinzufügen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="pause-modal">
+  <div class="modal-content">
+    <h2>Pause – Grund wählen</h2>
+    <div class="reason-list" id="reason-list"></div>
+    <input type="text" id="custom-reason" placeholder="Oder eigenen Grund eingeben...">
+    <div class="btn-group" style="margin-top:16px">
+      <button class="btn btn-ghost" id="pause-cancel">Abbrechen</button>
+      <button class="btn btn-warning" id="pause-confirm">Pause starten</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Daten lokal · Mehrere Sachen pro Auftrag
+</footer>
+
+<script>
+const STORAGE_KEY = 'polster_sesselzeit_v5';
+const DEFAULT_REASONS = [
+  "Mittagspause", "Kaffeepause", "Material warten", "Kundenanfrage",
+  "Technikproblem", "Besprechung", "Fahrtzeit", "Sonstiges"
+];
+
+let data = { auftraege: [], pauseReasons: [...DEFAULT_REASONS] };
+let currentDetailId = null;
+let timerInterval = null;
+let selectedReason = null;
+let currentPauseKatId = null;
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) data = JSON.parse(raw);
+    if (!data.pauseReasons) data.pauseReasons = [...DEFAULT_REASONS];
+    data.auftraege.forEach(a => {
+      if (a.menge == null) a.menge = 1;
+      if (a.fertig == null) a.fertig = false;
+      if (!a.kategorien) a.kategorien = [];
+      if (a.sessions && a.sessions.length && !a.kategorien.length) {
+        a.kategorien.push({ id: uid(), name: "Allgemein", sessions: a.sessions });
+        delete a.sessions;
+      }
+    });
+  } catch(e) { console.error(e); }
+}
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+function formatDuration(ms) {
+  if (!ms || ms < 0) ms = 0;
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return [h,m,sec].map(v => v.toString().padStart(2,'0')).join(':');
+}
+
+function formatPerUnit(ms, menge) {
+  if (!menge || menge <= 0 || !ms) return '–';
+  return formatDuration(ms / menge);
+}
+
+function formatDate(ts) {
+  if (!ts) return '–';
+  const d = new Date(ts);
+  return d.toLocaleDateString('de-AT') + ' ' + d.toLocaleTimeString('de-AT', {hour:'2-digit',minute:'2-digit'});
+}
+
+function getNetTime(session) {
+  if (!session.start) return 0;
+  const end = session.end || Date.now();
+  let total = end - session.start;
+  for (const p of (session.pauses || [])) {
+    const pe = p.end || Date.now();
+    total -= (pe - p.start);
+  }
+  return Math.max(0, total);
+}
+
+function getTotalForKategorie(kat) {
+  return (kat.sessions || []).reduce((sum, s) => sum + getNetTime(s), 0);
+}
+
+function getTotalForAuftrag(a) {
+  return (a.kategorien || []).reduce((sum, k) => sum + getTotalForKategorie(k), 0);
+}
+
+function getActiveSession(kat) {
+  return (kat.sessions || []).find(s => !s.end);
+}
+
+function isRunningKat(kat) {
+  const s = getActiveSession(kat);
+  if (!s) return false;
+  const lastPause = (s.pauses || []).slice(-1)[0];
+  return !lastPause || lastPause.end;
+}
+
+function isPausedKat(kat) {
+  const s = getActiveSession(kat);
+  if (!s) return false;
+  const lastPause = (s.pauses || []).slice(-1)[0];
+  return lastPause && !lastPause.end;
+}
+
+function isRunningAuftrag(a) {
+  return (a.kategorien || []).some(k => isRunningKat(k));
+}
+
+function isPausedAuftrag(a) {
+  return (a.kategorien || []).some(k => isPausedKat(k)) && !isRunningAuftrag(a);
+}
+
+function renderList() {
+  const list = document.getElementById('auftrag-list');
+  const empty = document.getElementById('empty-state');
+  if (!data.auftraege.length) {
+    list.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  list.innerHTML = data.auftraege.map(a => {
+    const total = getTotalForAuftrag(a);
+    let status, statusText;
+    if (a.fertig) {
+      status = 'fertig';
+      statusText = 'fertig';
+    } else {
+      status = isRunningAuftrag(a) ? 'running' : isPausedAuftrag(a) ? 'paused' : 'idle';
+      statusText = status === 'running' ? 'läuft' : status === 'paused' ? 'Pause' : 'bereit';
+    }
+    const per = formatPerUnit(total, a.menge);
+    const katCount = (a.kategorien || []).length;
+    return `
+      <div class="auftrag-item" data-id="${a.id}">
+        <div class="auftrag-info">
+          <h3>${escapeHtml(a.name)} <span style="color:var(--muted);font-weight:400">(${a.menge} Sessel)</span></h3>
+          <div class="meta">${statusText} · ${formatDuration(total)} gesamt · ${per}/Sessel · ${katCount} Sache(n)</div>
+        </div>
+        <span class="status-badge status-${status}">${statusText}</span>
+      </div>`;
+  }).join('');
+  list.querySelectorAll('.auftrag-item').forEach(el => {
+    el.onclick = () => openDetail(el.dataset.id);
+  });
+}
+
+function escapeHtml(s) {
+  return (s||'').replace(/[&<>"']/g, c => ({'&':'&','<':'<','>':'>','"':'"',"'":'&#39;'}[c]));
+}
+
+function openDetail(id) {
+  currentDetailId = id;
+  document.getElementById('home-view').classList.add('hidden');
+  document.getElementById('detail-view').classList.remove('hidden');
+  document.getElementById('add-fab').classList.add('hidden');
+  renderDetail();
+  startLiveTimer();
+}
+
+function closeDetail() {
+  currentDetailId = null;
+  document.getElementById('home-view').classList.remove('hidden');
+  document.getElementById('detail-view').classList.add('hidden');
+  document.getElementById('add-fab').classList.remove('hidden');
+  stopLiveTimer();
+  renderList();
+  renderBericht();
+}
+
+function getCurrentAuftrag() {
+  return data.auftraege.find(a => a.id === currentDetailId);
+}
+
+function renderDetail() {
+  const a = getCurrentAuftrag();
+  if (!a) return closeDetail();
+  document.getElementById('detail-name').textContent = a.name;
+  const fertig = !!a.fertig;
+  const running = !fertig && isRunningAuftrag(a);
+  const paused = !fertig && isPausedAuftrag(a);
+  const statusEl = document.getElementById('detail-status');
+  if (fertig) {
+    statusEl.innerHTML = '<span class="status-badge status-fertig">Fertig</span>';
+  } else if (running) {
+    statusEl.innerHTML = '<span class="status-badge status-running">Läuft</span>';
+  } else if (paused) {
+    statusEl.innerHTML = '<span class="status-badge status-paused">In Pause</span>';
+  } else {
+    statusEl.innerHTML = '<span class="status-badge status-idle">Bereit</span>';
+  }
+
+  const total = getTotalForAuftrag(a);
+  const per = formatPerUnit(total, a.menge);
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-row"><span class="stat-label">Gesamtzeit</span><span class="stat-value">${formatDuration(total)}</span></div>
+    <div class="stat-row"><span class="stat-label">Zeit pro Sessel</span><span class="stat-value">${per}</span></div>
+    <div class="stat-row"><span class="stat-label">Anzahl Sessel</span><span class="stat-value">${a.menge}</span></div>
+  `;
+
+  const mengeInput = document.getElementById('menge-input');
+  mengeInput.value = a.menge;
+  mengeInput.disabled = fertig;
+  document.getElementById('save-menge').disabled = fertig;
+  document.getElementById('add-kategorie').disabled = fertig;
+
+  const kList = document.getElementById('kategorien-list');
+  if (!(a.kategorien || []).length) {
+    kList.innerHTML = '<div style="color:var(--muted);font-size:0.9rem">Noch keine Sachen angelegt. Tippe auf + Neue Sache.</div>';
+  } else {
+    kList.innerHTML = a.kategorien.map(k => {
+      const kTotal = getTotalForKategorie(k);
+      const runningK = isRunningKat(k);
+      const pausedK = isPausedKat(k);
+      let controls = '';
+      if (fertig) {
+        controls = '<div style="color:var(--muted);font-size:0.8rem;margin-top:6px">Fertig</div>';
+      } else if (!runningK && !pausedK) {
+        controls = `<button class="btn btn-success btn-small" data-action="start" data-kid="${k.id}">▶ Start</button>`;
+      } else if (runningK) {
+        controls = `
+          <button class="btn btn-warning btn-small" data-action="pause" data-kid="${k.id}">⏸ Pause</button>
+          <button class="btn btn-danger btn-small" data-action="stop" data-kid="${k.id}">⏹ Stop</button>`;
+      } else if (pausedK) {
+        controls = `
+          <button class="btn btn-success btn-small" data-action="resume" data-kid="${k.id}">▶ Weiter</button>
+          <button class="btn btn-danger btn-small" data-action="stop" data-kid="${k.id}">⏹ Stop</button>`;
+      }
+      return `
+        <div class="kategorie-item">
+          <div class="kategorie-header">
+            <div class="kategorie-name">${escapeHtml(k.name)}</div>
+            <div class="kategorie-time">${formatDuration(kTotal)}</div>
+          </div>
+          <div class="btn-group" style="margin-top:6px">${controls}</div>
+        </div>`;
+    }).join('');
+
+    kList.querySelectorAll('button[data-action]').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const action = btn.dataset.action;
+        const kid = btn.dataset.kid;
+        if (action === 'start') startKat(kid);
+        if (action === 'pause') openPauseModal(kid);
+        if (action === 'resume') resumeKat(kid);
+        if (action === 'stop') stopKat(kid);
+      };
+    });
+  }
+
+  const fertigSection = document.getElementById('fertig-section');
+  if (fertig) {
+    fertigSection.innerHTML = '<div style="text-align:center;color:var(--success);font-weight:600">✓ Auftrag fertiggestellt</div>';
+  } else {
+    fertigSection.innerHTML = `
+      <button class="btn btn-success" id="btn-fertig">✓ Auftrag fertigstellen</button>
+      <p style="font-size:0.8rem;color:var(--muted);margin-top:8px;text-align:center">Nach dem Fertigstellen können keine Zeiten mehr geändert werden.</p>
+    `;
+    document.getElementById('btn-fertig').onclick = markFertig;
+  }
+}
+
+function updateLiveTimer() {
+  if (!currentDetailId) return;
+  const a = getCurrentAuftrag();
+  if (!a) return;
+  const total = getTotalForAuftrag(a);
+  if (a.fertig) {
+    document.getElementById('live-timer').textContent = formatDuration(total);
+    document.getElementById('session-info').textContent = 'Auftrag fertiggestellt';
+  } else {
+    let runningKat = null;
+    for (const k of (a.kategorien || [])) {
+      if (isRunningKat(k) || isPausedKat(k)) { runningKat = k; break; }
+    }
+    if (runningKat) {
+      const sess = getActiveSession(runningKat);
+      const display = getNetTime(sess);
+      document.getElementById('live-timer').textContent = formatDuration(display);
+      document.getElementById('session-info').textContent = runningKat.name + (isPausedKat(runningKat) ? ' (Pause)' : '');
+    } else {
+      document.getElementById('live-timer').textContent = formatDuration(total);
+      document.getElementById('session-info').textContent = 'Gesamtzeit';
+    }
+  }
+  const per = formatPerUnit(total, a.menge);
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-row"><span class="stat-label">Gesamtzeit</span><span class="stat-value">${formatDuration(total)}</span></div>
+    <div class="stat-row"><span class="stat-label">Zeit pro Sessel</span><span class="stat-value">${per}</span></div>
+    <div class="stat-row"><span class="stat-label">Anzahl Sessel</span><span class="stat-value">${a.menge}</span></div>
+  `;
+}
+
+function startLiveTimer() {
+  stopLiveTimer();
+  updateLiveTimer();
+  timerInterval = setInterval(updateLiveTimer, 1000);
+}
+function stopLiveTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = null;
+}
+
+function getKat(a, kid) {
+  return (a.kategorien || []).find(k => k.id === kid);
+}
+
+function startKat(kid) {
+  const a = getCurrentAuftrag();
+  if (!a || a.fertig) return;
+  const kat = getKat(a, kid);
+  if (!kat) return;
+  if (!kat.sessions) kat.sessions = [];
+  (a.kategorien || []).forEach(other => {
+    if (other.id !== kid) {
+      const s = getActiveSession(other);
+      if (s) {
+        s.end = Date.now();
+        const lp = (s.pauses||[]).slice(-1)[0];
+        if (lp && !lp.end) lp.end = Date.now();
+      }
+    }
+  });
+  kat.sessions.push({ id: uid(), start: Date.now(), end: null, pauses: [] });
+  save();
+  renderDetail();
+}
+
+function openPauseModal(kid) {
+  currentPauseKatId = kid;
+  const a = getCurrentAuftrag();
+  if (!a || a.fertig) return;
+  selectedReason = data.pauseReasons[0] || 'Sonstiges';
+  const list = document.getElementById('reason-list');
+  list.innerHTML = data.pauseReasons.map(r =>
+    `<div class="reason-chip ${r === selectedReason ? 'selected' : ''}" data-r="${escapeHtml(r)}">${escapeHtml(r)}</div>`
+  ).join('');
+  list.querySelectorAll('.reason-chip').forEach(chip => {
+    chip.onclick = () => {
+      list.querySelectorAll('.reason-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      selectedReason = chip.dataset.r;
+      document.getElementById('custom-reason').value = '';
+    };
+  });
+  document.getElementById('custom-reason').value = '';
+  document.getElementById('pause-modal').classList.add('active');
+}
+
+function confirmPause() {
+  const a = getCurrentAuftrag();
+  if (!a || a.fertig || !currentPauseKatId) return;
+  const kat = getKat(a, currentPauseKatId);
+  if (!kat) return;
+  const custom = document.getElementById('custom-reason').value.trim();
+  const reason = custom || selectedReason || 'Sonstiges';
+  const session = getActiveSession(kat);
+  if (!session) return;
+  if (!session.pauses) session.pauses = [];
+  session.pauses.push({ start: Date.now(), end: null, reason });
+  if (custom && !data.pauseReasons.includes(custom)) data.pauseReasons.push(custom);
+  save();
+  document.getElementById('pause-modal').classList.remove('active');
+  currentPauseKatId = null;
+  renderDetail();
+}
+
+function resumeKat(kid) {
+  const a = getCurrentAuftrag();
+  if (!a || a.fertig) return;
+  const kat = getKat(a, kid);
+  if (!kat) return;
+  const session = getActiveSession(kat);
+  if (!session) return;
+  const last = (session.pauses || []).slice(-1)[0];
+  if (last && !last.end) last.end = Date.now();
+  save();
+  renderDetail();
+}
+
+function stopKat(kid) {
+  const a = getCurrentAuftrag();
+  if (!a || a.fertig) return;
+  const kat = getKat(a, kid);
+  if (!kat) return;
+  const session = getActiveSession(kat);
+  if (!session) return;
+  const now = Date.now();
+  session.end = now;
+  const last = (session.pauses || []).slice(-1)[0];
+  if (last && !last.end) last.end = now;
+  save();
+  renderDetail();
+}
+
+function markFertig() {
+  const a = getCurrentAuftrag();
+  if (!a || a.fertig) return;
+  if (!confirm('Auftrag wirklich als fertig markieren?\nDanach können keine Zeiten mehr geändert werden.')) return;
+  (a.kategorien || []).forEach(k => {
+    const s = getActiveSession(k);
+    if (s) {
+      const now = Date.now();
+      s.end = now;
+      const last = (s.pauses || []).slice(-1)[0];
+      if (last && !last.end) last.end = now;
+    }
+  });
+  a.fertig = true;
+  a.fertigAm = Date.now();
+  save();
+  renderDetail();
+  renderList();
+  renderBericht();
+}
+
+function deleteAuftrag() {
+  const a = getCurrentAuftrag();
+  if (!a) return;
+  if (!confirm('Auftrag und alle Zeiten wirklich löschen?')) return;
+  data.auftraege = data.auftraege.filter(x => x.id !== currentDetailId);
+  save();
+  closeDetail();
+}
+
+function saveMenge() {
+  const a = getCurrentAuftrag();
+  if (!a || a.fertig) return;
+  const val = parseInt(document.getElementById('menge-input').value, 10);
+  if (isNaN(val) || val < 1) return alert('Bitte gültige Anzahl eingeben');
+  a.menge = val;
+  save();
+  renderDetail();
+  renderList();
+  renderBericht();
+}
+
+function addKategorie() {
+  const a = getCurrentAuftrag();
+  if (!a || a.fertig) return;
+  const name = document.getElementById('kategorie-name').value.trim();
+  if (!name) return alert('Bitte Namen eingeben');
+  if (!a.kategorien) a.kategorien = [];
+  a.kategorien.push({ id: uid(), name, sessions: [] });
+  save();
+  document.getElementById('kategorie-modal').classList.remove('active');
+  document.getElementById('kategorie-name').value = '';
+  renderDetail();
+}
+
+function renderBericht() {
+  const cont = document.getElementById('bericht-content');
+  if (!data.auftraege.length) {
+    cont.innerHTML = '<div style="color:var(--muted)">Noch keine Aufträge für den Bericht.</div>';
+    return;
+  }
+  let grandTotal = 0;
+  let totalSessel = 0;
+  let rows = '';
+  data.auftraege.forEach(a => {
+    const total = getTotalForAuftrag(a);
+    grandTotal += total;
+    totalSessel += a.menge || 0;
+    const per = formatPerUnit(total, a.menge);
+    const status = a.fertig ? 'Fertig' : 'Offen';
+    rows += `<tr>
+      <td>${escapeHtml(a.name)}</td>
+      <td>${a.menge}</td>
+      <td>${formatDuration(total)}</td>
+      <td>${per}</td>
+      <td>${status}</td>
+    </tr>`;
+  });
+  const avgPer = totalSessel > 0 ? formatDuration(grandTotal / totalSessel) : '–';
+  cont.innerHTML = `
+    <div class="stat-row"><span class="stat-label">Aufträge gesamt</span><span class="stat-value">${data.auftraege.length}</span></div>
+    <div class="stat-row"><span class="stat-label">Sessel gesamt</span><span class="stat-value">${totalSessel}</span></div>
+    <div class="stat-row"><span class="stat-label">Gesamtzeit</span><span class="stat-value">${formatDuration(grandTotal)}</span></div>
+    <div class="stat-row"><span class="stat-label">Durchschnitt pro Sessel</span><span class="stat-value">${avgPer}</span></div>
+    <table class="report-table">
+      <thead><tr><th>Auftrag</th><th>Sessel</th><th>Gesamtzeit</th><th>pro Sessel</th><th>Status</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `sesselzeit-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function exportCSV() {
+  let csv = 'Auftrag,Sessel,Gesamtzeit,Zeit pro Sessel,Status,Kategorie,Start,Ende,Pausen\n';
+  data.auftraege.forEach(a => {
+    const total = getTotalForAuftrag(a);
+    const per = formatPerUnit(total, a.menge);
+    const status = a.fertig ? 'Fertig' : 'Offen';
+    (a.kategorien || []).forEach(k => {
+      (k.sessions || []).forEach(s => {
+        const pauses = (s.pauses || []).map(p => p.reason).join('; ');
+        csv += `"${(a.name||'').replace(/"/g,'""')}",${a.menge},"${formatDuration(total)}","${per}","${status}","${(k.name||'').replace(/"/g,'""')}","${formatDate(s.start)}","${s.end?formatDate(s.end):'läuft'}","${pauses}"\n`;
+      });
+    });
+  });
+  const blob = new Blob([csv], {type: 'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `sesselzeit-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+function importJSON(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (imported.auftraege) {
+        if (confirm('Vorhandene Daten überschreiben?')) {
+          data = imported;
+          if (!data.pauseReasons) data.pauseReasons = [...DEFAULT_REASONS];
+          data.auftraege.forEach(a => {
+            if (a.menge == null) a.menge = 1;
+            if (a.fertig == null) a.fertig = false;
+            if (!a.kategorien) a.kategorien = [];
+          });
+          save();
+          renderList();
+          renderBericht();
+          alert('Import erfolgreich!');
+        }
+      }
+    } catch(err) { alert('Ungültige Datei'); }
+  };
+  reader.readAsText(file);
+}
+
+// Events
+document.getElementById('add-fab').onclick = () => {
+  document.getElementById('modal-title').textContent = 'Neuer Auftrag';
+  document.getElementById('modal-name').value = '';
+  document.getElementById('modal-menge').value = '1';
+  document.getElementById('modal-notes').value = '';
+  document.getElementById('modal').classList.add('active');
+};
+document.getElementById('modal-cancel').onclick = () => document.getElementById('modal').classList.remove('active');
+document.getElementById('modal-save').onclick = () => {
+  const name = document.getElementById('modal-name').value.trim();
+  if (!name) return alert('Bitte Namen eingeben');
+  const menge = parseInt(document.getElementById('modal-menge').value, 10) || 1;
+  data.auftraege.push({
+    id: uid(),
+    name,
+    menge: Math.max(1, menge),
+    notes: document.getElementById('modal-notes').value.trim(),
+    created: Date.now(),
+    kategorien: [],
+    fertig: false
+  });
+  save();
+  document.getElementById('modal').classList.remove('active');
+  renderList();
+  renderBericht();
+};
+document.getElementById('back-btn').onclick = closeDetail;
+document.getElementById('delete-auftrag').onclick = deleteAuftrag;
+document.getElementById('save-menge').onclick = saveMenge;
+document.getElementById('add-kategorie').onclick = () => {
+  document.getElementById('kategorie-name').value = '';
+  document.getElementById('kategorie-modal').classList.add('active');
+};
+document.getElementById('kategorie-cancel').onclick = () => document.getElementById('kategorie-modal').classList.remove('active');
+document.getElementById('kategorie-save').onclick = addKategorie;
+document.getElementById('pause-cancel').onclick = () => {
+  document.getElementById('pause-modal').classList.remove('active');
+  currentPauseKatId = null;
+};
+document.getElementById('pause-confirm').onclick = confirmPause;
+document.getElementById('export-json').onclick = exportJSON;
+document.getElementById('export-csv').onclick = exportCSV;
+document.getElementById('import-json').onclick = () => document.getElementById('import-file').click();
+document.getElementById('import-file').onchange = e => {
+  if (e.target.files[0]) importJSON(e.target.files[0]);
+  e.target.value = '';
+};
+document.getElementById('print-bericht').onclick = () => {
+  renderBericht();
+  window.print();
+};
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-auftraege').classList.add('hidden');
+    document.getElementById('tab-bericht').classList.add('hidden');
+    document.getElementById('tab-export').classList.add('hidden');
+    document.getElementById('tab-' + tab.dataset.tab).classList.remove('hidden');
+    if (tab.dataset.tab === 'bericht') renderBericht();
+  };
+});
+
+load();
+renderList();
+renderBericht();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && currentDetailId) updateLiveTimer();
+});
+</script>
+</body>
+</html>
